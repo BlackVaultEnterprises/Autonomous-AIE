@@ -1,0 +1,25 @@
+{
+  "name": "AIE Codespace",
+  "image": "mcr.microsoft.com/devcontainers/python:3.10",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+  "postCreateCommand": "pip install --upgrade pip && pip install black flake8 pytest && npm install -g npm && npm install -g @smithery/cli",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "python.formatting.provider": "black",
+        "python.linting.flake8Enabled": true,
+        "python.linting.enabled": true,
+        "editor.formatOnSave": true
+      },
+      "extensions": [
+        "ms-python.python",
+        "ms-azuretools.vscode-docker",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  },
+  "forwardPorts": [8000, 8080, 3000],
+  "remoteUser": "vscode"
+}
