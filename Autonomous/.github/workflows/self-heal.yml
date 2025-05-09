@@ -1,0 +1,43 @@
+name: Self-Heal on CI Failure
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+
+jobs:
+  selfheal:
+    if: github.event.workflow_run.conclusion == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up GitHub CLI
+        uses: cli/cli-action@v2
+      - name: Get PR number
+        id: getpr
+        run: |
+          PR_JSON=$(gh pr list --state open --json number,headRefName | jq -c '.[] | select(.headRefName | startswith("auto/integration-"))')
+          if [ -z "$PR_JSON" ]; then
+            echo "No auto-generated PR found. Exiting."
+            exit 0
+          fi
+          PR_NUMBER=$(echo $PR_JSON | jq -r '.number')
+          BRANCH_NAME=$(echo $PR_JSON | jq -r '.headRefName')
+          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "branch_name=$BRANCH_NAME" >> $GITHUB_OUTPUT
+      - name: Comment on PR with failure reason
+        if: steps.getpr.outputs.pr_number != ''
+        run: |
+          gh pr comment ${{ steps.getpr.outputs.pr_number }} --body "❌ CI failed. See logs for details: ${{ github.event.workflow_run.html_url }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Close PR
+        if: steps.getpr.outputs.pr_number != ''
+        run: |
+          gh pr close ${{ steps.getpr.outputs.pr_number }} --delete-branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: (Optional) Retry CI (re-run workflow)
+        if: false # Set to true to enable retry logic
+        run: |
+          echo "Retry logic placeholder. Implement as needed."
